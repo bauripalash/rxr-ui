@@ -1,5 +1,8 @@
 use cursive::event::{Event, Key};
-use cursive::views::{Button, Dialog, DummyView, EditView, LinearLayout, TextArea, ViewRef};
+use cursive::views::{
+    Button, Dialog, DummyView, EditView, LinearLayout, Panel, TextArea, TextView, ThemedView,
+    ViewRef,
+};
 use cursive::{theme, traits::*};
 
 fn main() {
@@ -14,6 +17,42 @@ fn main() {
         theme.palette[theme::PaletteColor::Secondary] = theme::Color::parse("#3a3a3a").unwrap();
     });
 
+    siv.menubar()
+        .add_subtree(
+            "File",
+            cursive::menu::Tree::new()
+                .leaf("Reset", move |s| {
+                    s.add_layer(
+                        Dialog::new()
+                            .title("Reset")
+                            .content(TextView::new("TODO: Reset all the content"))
+                            .dismiss_button("Close"),
+                    )
+                })
+                .leaf("Save", move |_| {})
+                .delimiter()
+                .leaf("Quit", move |s| s.quit()),
+        )
+        .add_subtree(
+            "Help",
+            cursive::menu::Tree::new()
+                .leaf("Help", move |_| {})
+                .leaf("About rexer", move |s| {
+                    s.add_layer(
+                        Dialog::new()
+                            .title("~rexer~")
+                            .content(TextView::new("A simple regex tester"))
+                            .dismiss_button("Ok"),
+                    );
+                }),
+        );
+
+    siv.set_autohide_menu(false);
+
+    let output_box_theme = siv.current_theme().clone().with(|theme| {
+        theme.palette[theme::PaletteColor::Primary] = theme::Color::Light(theme::BaseColor::White);
+    });
+
     let tx = cursive::views::OnEventView::new(cursive::views::ThemedView::new(
         my_theme.clone(),
         TextArea::new().with_name("tsi").full_width().full_height(),
@@ -23,11 +62,18 @@ fn main() {
         let mut prev_content = tt.get_content().to_owned();
         prev_content.push_str("    ");
         tt.set_content(prev_content.clone());
-        //let c_cursor = tt.cursor();
         tt.set_cursor(prev_content.len());
-        //tt.set_cursor(prev_content.len())
-        //s.add_layer(Dialog::new().content(TextView::new(tt.cursor().to_string())).dismiss_button("close"));
     });
+
+    let output_box = Panel::new(ThemedView::new(
+        output_box_theme,
+        TextView::new("No result found! 🙈")
+            .with_name("output_text")
+            .full_height()
+            .full_width(),
+    ))
+    .title("Result")
+    .with_name("res_panel");
 
     let rx =
         cursive::views::ThemedView::new(my_theme, EditView::new().with_name("tri").full_width());
@@ -35,14 +81,24 @@ fn main() {
     siv.add_fullscreen_layer(Dialog::around(
         LinearLayout::vertical()
             .child(
-                LinearLayout::horizontal()
-                    .child(rx)
-                    .child(DummyView)
-                    .child(Button::new("Execute", |_c| {}))
-                    .full_width(),
+                Panel::new(
+                    LinearLayout::horizontal()
+                        .child(rx)
+                        .child(DummyView)
+                        .child(Button::new("Execute", |_c| {
+                            let mut ob: ViewRef<TextView> = _c.find_name("output_text").unwrap();
+                            ob.set_content("Hello world")
+                        }))
+                        .full_width(),
+                )
+                .title("Regex input"),
             )
             .child(DummyView)
-            .child(LinearLayout::horizontal().child(tx)),
+            .child(
+                LinearLayout::horizontal()
+                    .child(Panel::new(tx).title("Input Text").full_width())
+                    .child(output_box),
+            ),
     ));
     siv.run();
 }
