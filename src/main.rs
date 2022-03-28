@@ -1,7 +1,5 @@
 use cursive::event::{Event, Key};
-use cursive::views::{
-    Button, Dialog, DummyView, EditView, LinearLayout, TextArea, ViewRef,
-};
+use cursive::views::{Button, Dialog, DummyView, EditView, LinearLayout, TextArea, ViewRef};
 use cursive::{theme, traits::*};
 
 fn main() {
