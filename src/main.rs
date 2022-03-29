@@ -1,4 +1,7 @@
+//use cursive::backends::termion::termion::color::Color;
 use cursive::event::{Event, Key};
+use cursive::theme::{Color, BaseColor, Style, Effect};
+use cursive::utils::markup::StyledString;
 use cursive::views::{
     Button, Dialog, DummyView, EditView, LinearLayout, Panel, TextArea, TextView, ThemedView,
     ViewRef,
@@ -35,14 +38,33 @@ fn main() {
                             .dismiss_button("Close"),
                     )
                 })
-                .leaf("Save", move |_| {})
+                .leaf("Save", move |s| {
+                s.add_layer(
+                        Dialog::new()
+                            .title("Save")
+                            .content(TextView::new("TODO: Save! (But what?)"))
+                            .dismiss_button("Close"),
+                    )
+
+
+
+                })
                 .delimiter()
                 .leaf("Quit", move |s| s.quit()),
         )
         .add_subtree(
             "Help",
             cursive::menu::Tree::new()
-                .leaf("Help", move |_| {})
+                .leaf("Help", move |s| {
+                    s.add_layer(
+                        Dialog::new()
+                            .title("Help")
+                            .content(TextView::new("TODO: Show Help"))
+                            .dismiss_button("Close"),
+                    )
+
+
+                })
                 .leaf("About rexer", move |s| {
                     s.add_layer(
                         Dialog::new()
@@ -101,13 +123,21 @@ fn main() {
                             match raw_reg {
                                 Ok(r) => {
                                     let mut tmp: Vec<String> = vec![];
-
+                                    let mut styledtext = StyledString::plain("");
                                     for (i,f) in r.find_iter(&input_string).enumerate() {
                                         let tmp_output = format!("[M{}] String->{} | Starts at->{} | Ends at->{} | Range->{:?}" , &i+1 ,&f.as_str() , &f.start() , &f.end(), &f.range() );
+
                                         tmp.push(tmp_output);
+
+                                        styledtext.append(StyledString::styled(format!("M[{}] " , i) , Style::from(Color::Light(BaseColor::White)).combine(Effect::Bold)));
+                                        styledtext.append(StyledString::styled(&f.as_str().to_owned(), Color::Light(BaseColor::Green)));
+                                        styledtext.append_plain(" : ");
+                                        styledtext.append(StyledString::styled(format!("<{}...{}>" , &f.start() , &f.end()), Style::from(Color::Light(BaseColor::Cyan)).combine(Effect::Underline)));
+                                        styledtext.append_plain("\n"); 
                                     }
 
-                                    ob.set_content(tmp.join("\n"));
+                                    //ob.set_content(tmp.join("\n"));
+                                    ob.set_content(styledtext);
                                 }
                                 Err(_) => {
                                     ob.set_content("Invalid Regex");
