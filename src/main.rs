@@ -4,10 +4,16 @@ use cursive::views::{
     ViewRef,
 };
 use cursive::{theme, traits::*};
+use cursive_tabs::TabPanel;
+use regex::Regex;
+
+// Issue => Screen flickers when using crossterm backend with `cursive_tabs`
 
 fn main() {
     let mut siv = cursive::default();
-
+    siv.set_window_title("~rexer~");
+    siv.set_fps(30);
+    siv.set_autorefresh(true);
     //experimental theme;
 
     siv.load_theme_file("themes/dark.toml").unwrap();
@@ -69,8 +75,7 @@ fn main() {
         output_box_theme,
         TextView::new("No result found! 🙈")
             .with_name("output_text")
-            .full_height()
-            .full_width(),
+            .full_height(),
     ))
     .title("Result")
     .with_name("res_panel");
@@ -78,8 +83,10 @@ fn main() {
     let rx =
         cursive::views::ThemedView::new(my_theme, EditView::new().with_name("tri").full_width());
 
-    siv.add_fullscreen_layer(Dialog::around(
+    //siv.add_fullscreen_layer(
+    let main_dialog = Dialog::around(
         LinearLayout::vertical()
+            .child(DummyView)
             .child(
                 Panel::new(
                     LinearLayout::horizontal()
@@ -87,7 +94,26 @@ fn main() {
                         .child(DummyView)
                         .child(Button::new("Execute", |_c| {
                             let mut ob: ViewRef<TextView> = _c.find_name("output_text").unwrap();
-                            ob.set_content("Hello world")
+                            let edv: ViewRef<EditView> = _c.find_name("tri").unwrap();
+                            let raw_reg = Regex::new(&edv.get_content().to_string());
+                            let input_box: ViewRef<TextArea> = _c.find_name("tsi").unwrap();
+                            let input_string = input_box.get_content().to_owned();
+                            match raw_reg {
+                                Ok(r) => {
+                                    let mut tmp: Vec<String> = vec![];
+
+                                    for (i,f) in r.find_iter(&input_string).enumerate() {
+                                        let tmp_output = format!("[M{}] String->{} | Starts at->{} | Ends at->{} | Range->{:?}" , &i+1 ,&f.as_str() , &f.start() , &f.end(), &f.range() );
+                                        tmp.push(tmp_output);
+                                    }
+
+                                    ob.set_content(tmp.join("\n"));
+                                }
+                                Err(_) => {
+                                    ob.set_content("Invalid Regex");
+                                }
+                            }
+                            //ob.set_content(edv.get_content().to_string())
                         }))
                         .full_width(),
                 )
@@ -99,6 +125,12 @@ fn main() {
                     .child(Panel::new(tx).title("Input Text").full_width())
                     .child(output_box),
             ),
-    ));
+    )
+    .with_name("main");
+    //);
+    let main_panel = TabPanel::new()
+        .with_tab(main_dialog)
+        .with_name("experiment");
+    siv.add_fullscreen_layer(main_panel);
     siv.run();
 }
