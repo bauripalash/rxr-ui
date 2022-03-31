@@ -1,13 +1,12 @@
 //use cursive::backends::termion::termion::color::Color;
 use cursive::event::{Event, Key};
-use cursive::theme::{Color, BaseColor, Style, Effect};
+use cursive::theme::{BaseColor, Color, Effect, Style};
 use cursive::utils::markup::StyledString;
 use cursive::views::{
     Button, Dialog, DummyView, EditView, LinearLayout, Panel, TextArea, TextView, ThemedView,
-    ViewRef,
+    ViewRef, ScrollView,
 };
 use cursive::{theme, traits::*};
-use cursive_tabs::TabPanel;
 use regex::Regex;
 
 // Issue => Screen flickers when using crossterm backend with `cursive_tabs`
@@ -15,8 +14,8 @@ use regex::Regex;
 fn main() {
     let mut siv = cursive::default();
     siv.set_window_title("~rexer~");
-    siv.set_fps(30);
-    siv.set_autorefresh(true);
+    //siv.set_fps(30);
+    //siv.set_autorefresh(true);
     //experimental theme;
 
     siv.load_theme_file("themes/dark.toml").unwrap();
@@ -35,19 +34,21 @@ fn main() {
                         Dialog::new()
                             .title("Reset")
                             .content(TextView::new("TODO: Reset all the content"))
-                            .dismiss_button("Close"),
+                            .button("Reset", |s| {
+                                let mut regex_input: ViewRef<EditView> =
+                                    s.find_name("tri").unwrap();
+                                regex_input.set_content("");
+                                let mut string_input: ViewRef<TextArea> =
+                                    s.find_name("tsi").unwrap();
+                                string_input.set_content("");
+                                let mut output_box: ViewRef<TextView> =
+                                    s.find_name("output_text").unwrap();
+                                output_box.set_content("");
+                                s.pop_layer().unwrap();
+                            })
+                            .dismiss_button("Cancel")
+                            .with_name("reset_dialog"),
                     )
-                })
-                .leaf("Save", move |s| {
-                s.add_layer(
-                        Dialog::new()
-                            .title("Save")
-                            .content(TextView::new("TODO: Save! (But what?)"))
-                            .dismiss_button("Close"),
-                    )
-
-
-
                 })
                 .delimiter()
                 .leaf("Quit", move |s| s.quit()),
@@ -62,8 +63,6 @@ fn main() {
                             .content(TextView::new("TODO: Show Help"))
                             .dismiss_button("Close"),
                     )
-
-
                 })
                 .leaf("About rexer", move |s| {
                     s.add_layer(
@@ -153,14 +152,14 @@ fn main() {
             .child(
                 LinearLayout::horizontal()
                     .child(Panel::new(tx).title("Input Text").full_width())
-                    .child(output_box),
+                    .child(ScrollView::new(output_box)),
             ),
     )
     .with_name("main");
     //);
-    let main_panel = TabPanel::new()
-        .with_tab(main_dialog)
-        .with_name("experiment");
-    siv.add_fullscreen_layer(main_panel);
+    //let main_panel = TabPanel::new()
+    //    .with_tab(main_dialog)
+    //    .with_name("experiment");
+    siv.add_fullscreen_layer(main_dialog);
     siv.run();
 }
